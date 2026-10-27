@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat P2P</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main>
+        <h1>Chat P2P</h1>
+
+        <!-- Pantalla para introducir el nombre -->
+        <section id="pantallaNombre">
+            <h2>Bienvenido</h2>
+            <p>Introduce tu nombre para entrar al chat.</p>
+
+            <input type="text" id="nombre" placeholder="Tu nombre" maxlength="20">
+            <button id="botonEntrar">Entrar</button>
+        </section>
+
+        <!-- Pantalla principal del chat -->
+        <section id="pantallaChat" hidden>
+
+            <div class="usuarios">
+                <h2>Usuarios conectados</h2>
+                <ul id="listaUsuarios"></ul>
+            </div>
+
+            <div class="chat">
+                <h2 id="tituloChat">Selecciona un usuario</h2>
+
+                <div id="mensajes"></div>
+
+                <form id="formularioMensaje">
+                    <input type="text" id="mensaje" placeholder="Escribe un mensaje..." autocomplete="off">
+                    <button type="submit">Enviar</button>
+                </form>
+            </div>
+
+        </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/simple-peer@9.11.1/simplepeer.min.js"></script>
+    <script src="client.js"></script>
+
+</body>
+
+</html>
