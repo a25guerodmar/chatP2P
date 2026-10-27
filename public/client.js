@@ -14,6 +14,7 @@ const inputMensaje = document.getElementById('mensaje');
 // Datos del usuario y de la conexión
 let miNombre = '';
 let usuarioSeleccionado = '';
+let usuarioSeleccionadoNombre = '';
 let peer = null;
 
 // Entrar al chat
@@ -64,6 +65,7 @@ function iniciarChat(id, nombre) {
     }
 
     usuarioSeleccionado = id;
+    usuarioSeleccionadoNombre = nombre;
     tituloChat.textContent = 'Chat con ' + nombre;
     mensajes.innerHTML = '';
 
@@ -84,7 +86,6 @@ function crearConexion(esIniciador) {
         trickle: false
     });
 
-    // Enviar la señalización al otro navegador
     peer.on('signal', function(senal) {
         socket.emit('senal', {
             destino: usuarioSeleccionado,
@@ -92,17 +93,14 @@ function crearConexion(esIniciador) {
         });
     });
 
-    // La conexión está preparada
     peer.on('connect', function() {
         tituloChat.textContent = 'Conectado mediante P2P';
     });
 
-    // Recibir mensajes
     peer.on('data', function(datos) {
-        mostrarMensaje('Otro usuario', datos.toString());
+        mostrarMensaje(usuarioSeleccionadoNombre, datos.toString());
     });
 
-    // Mostrar errores
     peer.on('error', function(error) {
         console.error('Error WebRTC:', error);
     });
@@ -115,6 +113,7 @@ socket.on('iniciar_chat', function(datos) {
     }
 
     usuarioSeleccionado = datos.origen;
+    usuarioSeleccionadoNombre = datos.nombre;
     tituloChat.textContent = 'Chat con ' + datos.nombre;
     mensajes.innerHTML = '';
 
