@@ -1,6 +1,5 @@
 const socket = io();
 
-// Elementos del HTML
 const pantallaNombre = document.getElementById('pantallaNombre');
 const pantallaChat = document.getElementById('pantallaChat');
 const inputNombre = document.getElementById('nombre');
@@ -11,13 +10,11 @@ const mensajes = document.getElementById('mensajes');
 const formularioMensaje = document.getElementById('formularioMensaje');
 const inputMensaje = document.getElementById('mensaje');
 
-// Datos del usuario y de la conexión
 let miNombre = '';
 let usuarioSeleccionado = '';
 let usuarioSeleccionadoNombre = '';
 let peer = null;
 
-// Entrar al chat
 botonEntrar.addEventListener('click', function() {
     const nombre = inputNombre.value.trim();
 
@@ -34,7 +31,6 @@ botonEntrar.addEventListener('click', function() {
     socket.emit('entrar', miNombre);
 });
 
-// Mostrar los usuarios conectados
 socket.on('usuarios', function(usuarios) {
     listaUsuarios.innerHTML = '';
 
@@ -56,9 +52,28 @@ socket.on('usuarios', function(usuarios) {
 
         listaUsuarios.appendChild(elemento);
     });
+    if (usuarioSeleccionado !== '') {
+        const usuarioExiste = usuarios.some(function(usuario) {
+            return usuario.id === usuarioSeleccionado;
+        });
+
+    if (!usuarioExiste) {
+        if (peer) {
+            peer.destroy();
+            peer = null;
+        }
+
+        alert(usuarioSeleccionadoNombre + ' se ha desconectado.');
+
+        usuarioSeleccionado = '';
+        usuarioSeleccionadoNombre = '';
+        mensajes.innerHTML = '';
+
+        tituloChat.textContent = 'Selecciona un usuario';
+    }
+    }
 });
 
-// Iniciar un chat con otro usuario
 function iniciarChat(id, nombre) {
     if (peer) {
         peer.destroy();
@@ -69,17 +84,14 @@ function iniciarChat(id, nombre) {
     tituloChat.textContent = 'Chat con ' + nombre;
     mensajes.innerHTML = '';
 
-    // Creamos la conexión como iniciador
     crearConexion(true);
 
-    // Avisamos al otro usuario
     socket.emit('iniciar_chat', {
         destino: id,
         nombre: miNombre
     });
 }
 
-// Crear la conexión WebRTC
 function crearConexion(esIniciador) {
     peer = new SimplePeer({
         initiator: esIniciador,
@@ -106,7 +118,6 @@ function crearConexion(esIniciador) {
     });
 }
 
-// Recibir una solicitud de chat
 socket.on('iniciar_chat', function(datos) {
     if (peer) {
         peer.destroy();
@@ -117,18 +128,15 @@ socket.on('iniciar_chat', function(datos) {
     tituloChat.textContent = 'Chat con ' + datos.nombre;
     mensajes.innerHTML = '';
 
-    // Creamos la conexión como receptor
     crearConexion(false);
 });
 
-// Recibir la señalización del otro navegador
 socket.on('senal', function(datos) {
     if (peer && datos.origen === usuarioSeleccionado) {
         peer.signal(datos.senal);
     }
 });
 
-// Enviar mensajes
 formularioMensaje.addEventListener('submit', function(evento) {
     evento.preventDefault();
 
@@ -147,7 +155,6 @@ formularioMensaje.addEventListener('submit', function(evento) {
     }
 });
 
-// Mostrar un mensaje en pantalla
 function mostrarMensaje(remitente, texto) {
     const parrafo = document.createElement('p');
     parrafo.textContent = remitente + ': ' + texto;
