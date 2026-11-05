@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -33,6 +34,13 @@
 
                 <div id="mensajes"></div>
 
+                <video id="videoRemoto" autoplay playsinline hidden style="width: 100%; max-height: 400px; background: black;"></video>
+
+                <div>
+                    <button id="botonCompartir" disabled>Compartir pantalla</button>
+                    <button id="botonDetener" disabled>Dejar de compartir</button>
+                </div>
+
                 <form id="formularioMensaje">
                     <input type="text" id="mensaje" placeholder="Escribe un mensaje..." autocomplete="off">
                     <button type="submit">Enviar</button>
@@ -49,3 +57,4 @@
 </body>
 
 </html>
+

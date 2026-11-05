@@ -1,3 +1,4 @@
+
 const socket = io();
 
 const pantallaNombre = document.getElementById('pantallaNombre');
@@ -9,11 +10,15 @@ const tituloChat = document.getElementById('tituloChat');
 const mensajes = document.getElementById('mensajes');
 const formularioMensaje = document.getElementById('formularioMensaje');
 const inputMensaje = document.getElementById('mensaje');
+const botonCompartir = document.getElementById('botonCompartir');
+const botonDetener = document.getElementById('botonDetener');
+const videoRemoto = document.getElementById('videoRemoto');
 
 let miNombre = '';
 let usuarioSeleccionado = '';
 let usuarioSeleccionadoNombre = '';
 let peer = null;
+let streamPantalla = null;
 
 botonEntrar.addEventListener('click', function() {
     const nombre = inputNombre.value.trim();
@@ -52,29 +57,36 @@ socket.on('usuarios', function(usuarios) {
 
         listaUsuarios.appendChild(elemento);
     });
+
     if (usuarioSeleccionado !== '') {
         const usuarioExiste = usuarios.some(function(usuario) {
             return usuario.id === usuarioSeleccionado;
         });
 
-    if (!usuarioExiste) {
-        if (peer) {
-            peer.destroy();
-            peer = null;
+        if (!usuarioExiste) {
+            detenerComparticion();
+
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+
+            alert(usuarioSeleccionadoNombre + ' se ha desconectado.');
+
+            usuarioSeleccionado = '';
+            usuarioSeleccionadoNombre = '';
+            mensajes.innerHTML = '';
+            videoRemoto.srcObject = null;
+            videoRemoto.hidden = true;
+            tituloChat.textContent = 'Selecciona un usuario';
+            botonCompartir.disabled = true;
         }
-
-        alert(usuarioSeleccionadoNombre + ' se ha desconectado.');
-
-        usuarioSeleccionado = '';
-        usuarioSeleccionadoNombre = '';
-        mensajes.innerHTML = '';
-
-        tituloChat.textContent = 'Selecciona un usuario';
-    }
     }
 });
 
 function iniciarChat(id, nombre) {
+    detenerComparticion();
+
     if (peer) {
         peer.destroy();
     }
@@ -83,6 +95,9 @@ function iniciarChat(id, nombre) {
     usuarioSeleccionadoNombre = nombre;
     tituloChat.textContent = 'Chat con ' + nombre;
     mensajes.innerHTML = '';
+    videoRemoto.srcObject = null;
+    videoRemoto.hidden = true;
+    botonCompartir.disabled = true;
 
     crearConexion(true);
 
@@ -107,18 +122,34 @@ function crearConexion(esIniciador) {
 
     peer.on('connect', function() {
         tituloChat.textContent = 'Conectado mediante P2P';
+        botonCompartir.disabled = false;
     });
 
     peer.on('data', function(datos) {
         mostrarMensaje(usuarioSeleccionadoNombre, datos.toString());
     });
 
+    peer.on('stream', function(stream) {
+        videoRemoto.srcObject = stream;
+        videoRemoto.hidden = false;
+        videoRemoto.play().catch(function(error) {
+            console.log(error);
+        });
+    });
+
     peer.on('error', function(error) {
         console.error('Error WebRTC:', error);
+    });
+
+    peer.on('close', function() {
+        botonCompartir.disabled = true;
+        botonDetener.disabled = true;
     });
 }
 
 socket.on('iniciar_chat', function(datos) {
+    detenerComparticion();
+
     if (peer) {
         peer.destroy();
     }
@@ -127,6 +158,9 @@ socket.on('iniciar_chat', function(datos) {
     usuarioSeleccionadoNombre = datos.nombre;
     tituloChat.textContent = 'Chat con ' + datos.nombre;
     mensajes.innerHTML = '';
+    videoRemoto.srcObject = null;
+    videoRemoto.hidden = true;
+    botonCompartir.disabled = true;
 
     crearConexion(false);
 });
@@ -159,4 +193,52 @@ function mostrarMensaje(remitente, texto) {
     const parrafo = document.createElement('p');
     parrafo.textContent = remitente + ': ' + texto;
     mensajes.appendChild(parrafo);
+}
+
+botonCompartir.addEventListener('click', async function() {
+    try {
+        streamPantalla = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: false
+        });
+
+        if (peer && peer.connected) {
+            peer.addStream(streamPantalla);
+            botonCompartir.disabled = true;
+            botonDetener.disabled = false;
+
+            const pista = streamPantalla.getVideoTracks()[0];
+
+            pista.addEventListener('ended', function() {
+                detenerComparticion();
+            });
+        }
+    } catch (error) {
+        console.log('No se ha podido compartir la pantalla:', error);
+    }
+});
+
+botonDetener.addEventListener('click', function() {
+    detenerComparticion();
+});
+
+function detenerComparticion() {
+    if (streamPantalla) {
+        const stream = streamPantalla;
+        streamPantalla = null;
+
+        if (peer && peer.connected) {
+            peer.removeStream(stream);
+        }
+
+        stream.getTracks().forEach(function(pista) {
+            pista.stop();
+        });
+    }
+
+    botonDetener.disabled = true;
+
+    if (peer && peer.connected) {
+        botonCompartir.disabled = false;
+    }
 }
